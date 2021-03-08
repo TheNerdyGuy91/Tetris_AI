@@ -1,16 +1,15 @@
 import Tetriminos.Tetromino;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Random;
 
-public class TetrisGrid
+public class TetrisGrid implements Cloneable
 {
 
-    private static int height = 18, width = 10;
+    private static int height = 24, width = 10;
     private int [][]board;
    private int []columnHeights;
-
-
    private int totaCompletedLines;
   private Matrix inputHeuristic;
     TetrisGrid()
@@ -20,7 +19,7 @@ public class TetrisGrid
         totaCompletedLines = 0;
         clearBoard();
         inputHeuristic = new Matrix();
-        inputHeuristic.setMatrix( 5, 1);
+        inputHeuristic.setMatrix( 7, 1);
     }
     public void clearBoard()
     {
@@ -50,16 +49,16 @@ public class TetrisGrid
         }
     }
 
-    public int aggregateHeightHeuristic()
+    public double aggregateHeightHeuristic()
     {
         int sum = 0;
         for (int w = 0; w < width; w++)
         {
             sum += columnHeights[w];
         }
-        return sum;
+        return sum / 100000.0;
     }
-    public int getCompletedLinesHeuristic()
+    public double getCompletedLinesHeuristic()
     {
         boolean isLineComplete = true;
         totaCompletedLines = 0;
@@ -75,20 +74,20 @@ public class TetrisGrid
             }
             totaCompletedLines += (isLineComplete ? 1 : 0);
         }
-        return totaCompletedLines;
+        return totaCompletedLines * 1000.0;
     }
-    public int getBumpinessHeurstic()
+    public double getBumpinessHeurstic()
     {
         int bumpiness = 0;
-        for (int w = 0; w < width - 1; w++)
+        for (int w = 1; w < width; w++)
         {
-            bumpiness += Math.abs(columnHeights[w] - columnHeights[w + 1]);
+            bumpiness += Math.abs(columnHeights[w - 1] - columnHeights[w]);
         }
-        return bumpiness;
+        return bumpiness / 1000.0;
     }
-    public int getHolesHeuristic()
+    public double getHolesHeuristic()
     {
-        int holes = 0;
+        double holes = 0;
         for (int w = 0; w < width; w++)
         {
             for (int h = height - 1; h >= height - columnHeights[w]; h--)
@@ -98,14 +97,40 @@ public class TetrisGrid
         }
         return holes;
     }
-    public int getDeepWellsHeuristic()
+    public double getDeepWellsHeuristic()
     {
         int wells = 0;
         for (int w = 0; w < width; w++)
         {
             wells += (columnHeights[w] == 0 ? 1 : 0);
         }
-        return wells;
+        return wells / 2000.0;
+    }
+    public double rowTransitionHeuristic()
+    {
+        int sum = 0;
+        for (int r = 0; r < TetrisGrid.getHeight(); r++)
+        {
+            for (int c = 0; c < TetrisGrid.getWidth() - 1; c++)
+            {
+                sum += (board[r][c] > 0 && board[r][c + 1] == 0 || board[r][c] == 0
+                        && board[r][c + 1] > 0 ? 1 : 0);
+            }
+        }
+        return sum / 10.0;
+    }
+    public double colTransitionHeuristic()
+    {
+        int sum = 0;
+        for (int r = 0; r < TetrisGrid.getHeight() - 1; r++)
+        {
+            for (int c = 0; c < TetrisGrid.getWidth(); c++)
+            {
+                sum += (board[r][c] > 0 && board[r + 1][c] == 0 || board[r][c] == 0
+                        && board[r + 1][c] > 0 ? 1 : 0);
+            }
+        }
+        return sum / 10.0;
     }
     public boolean checkCollision(int posX, int posY, int [][]currentPiece, boolean ischeckX)
     {
@@ -130,16 +155,21 @@ public class TetrisGrid
 
         return false;
     }
-    public void mergeTetriminoAt(int posX, int posY, int [][] currPiece)
+    public boolean mergeTetriminoAt(int posX, int posY, int [][] currPiece)
     {
         for (int y = 0; y < currPiece.length; y++)
         {
             for (int x = 0; x < currPiece[0].length; x++)
             {
+                if (x + posX >= width)
+                {
+                    return false;
+                }
                 board[y + posY][posX + x] = (board[y + posY][posX + x] == 0 ? currPiece[y][x] :
                         board[y + posY][posX + x]);
             }
         }
+        return true;
     }
     public void removeTetriminoAt(int posX, int posY, int [][] currPiece)
     {
@@ -155,11 +185,13 @@ public class TetrisGrid
     {
         setColumnHeights(); // to update
 
-        inputHeuristic.setValueAt(-aggregateHeightHeuristic(), 0, 0);
-        inputHeuristic.setValueAt(-getHolesHeuristic(), 1, 0);
-        inputHeuristic.setValueAt(-getBumpinessHeurstic(), 2, 0);
-        inputHeuristic.setValueAt(-getDeepWellsHeuristic(), 3, 0);
+        inputHeuristic.setValueAt(aggregateHeightHeuristic() , 0, 0);
+        inputHeuristic.setValueAt(getHolesHeuristic() , 1, 0);
+        inputHeuristic.setValueAt(getBumpinessHeurstic(), 2, 0);
+        inputHeuristic.setValueAt(getDeepWellsHeuristic(), 3, 0);
         inputHeuristic.setValueAt(getCompletedLinesHeuristic(), 4, 0);
+        inputHeuristic.setValueAt(rowTransitionHeuristic(), 5, 0);
+        inputHeuristic.setValueAt(colTransitionHeuristic(), 6, 0);
         return inputHeuristic;
     }
     public void displayBoard()
@@ -227,7 +259,8 @@ public class TetrisGrid
     {
         return board[row][col];
     }
-    public int getCompletedLines() {
-        return totaCompletedLines;
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

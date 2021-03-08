@@ -21,5 +21,4 @@ public class TertriminoSpawn
         spawnedBlock.put(5, new TetrominoT());
         spawnedBlock.put(6, new TetrominoZ());
     }
-
 }

@@ -88,11 +88,14 @@ public class Matrix
     public void randomize()
     {
         Random rand = new Random();
+        double value;
+        boolean isNegative;
         for (int r = 0; r < getRow(); r++)
         {
             for (int c = 0; c < getColumn(); c++)
             {
-                data.get(r).set(c, (double)rand.nextDouble());
+                value = rand.nextGaussian() + rand.nextInt(1);
+                data.get(r).set(c, value);
             }
         }
     }

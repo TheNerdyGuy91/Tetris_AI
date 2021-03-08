@@ -5,7 +5,7 @@ public class TetrisGUI
     private JFrame displayGUI;
     private BoardGUI boardDisplay;
     private int [][]shapeColor;
-    public static final int Width = 445, Height = 629;
+    public static final int Width = 500, Height = 1200;
     public TetrisGUI()
     {
         shapeColor = new int[TetrisGrid.getHeight()][TetrisGrid.getWidth()];
@@ -19,10 +19,12 @@ public class TetrisGUI
         displayGUI.setVisible(true);
 
     }
-    public void updateMap()
+    public void updateMap(TetrisGrid grid)
     {
-
+        boardDisplay.updateMap(grid);
     }
-
-
+    public void end()
+    {
+        displayGUI.dispose();
+    }
 }

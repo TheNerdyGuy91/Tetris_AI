@@ -8,11 +8,14 @@ public class DNA
 {
    private Matrix wHiddenInput, wOutputHidden;
    double mutateRate;
+   boolean inheritFromParentA[];
+
    DNA()
    {
-       mutateRate = 0.2;
+       mutateRate = 0.15;
        wHiddenInput = new Matrix();
        wOutputHidden = new Matrix();
+       inheritFromParentA = new boolean[7];
    }
    public void setLayers(int inputNodes, int hiddenNodes, int outputNodes)
    {
@@ -26,12 +29,15 @@ public class DNA
     }
     public Matrix mutate(Matrix layer)
     {
-        double value;
+        double valueWeight, mutation, value;
         Random rand = new Random();
         for (int r = 0; r < layer.getRow(); r++) {
-            for (int c = 0; c < layer.getColumn(); c++) {
-                value = (rand.nextDouble() <= mutateRate ? rand.nextDouble() : layer.getDataAt(r, c));
-                layer.setValueAt(value, r, c);
+            value = rand.nextGaussian() + rand.nextInt(1);
+            mutation = rand.nextInt(100) / 100.0;
+            for (int c = 0; c < layer.getColumn(); c++)
+            {
+                valueWeight = (mutation <= mutateRate ? value : layer.getDataAt(r, c));
+                layer.setValueAt(valueWeight, r, c);
             }
 
         }
@@ -58,11 +64,12 @@ public class DNA
         childLayer.setMatrix(layer.getRow(), layer.getColumn());
         childLayer.randomize();
         double value;
+        Random rand = new Random();
         for (int r = 0; r < layer.getRow(); r++)
         {
             for (int c = 0; c < layer.getColumn(); c++)
             {
-                value = ((c + 1) % 2 == 0 ? layer.getDataAt(r, c) : bLayer.getDataAt(r, c));
+                value = (inheritFromParentA[r] ? layer.getDataAt(r, c) : bLayer.getDataAt(r, c));
                 childLayer.setValueAt(value, r, c);
 
             }
@@ -74,6 +81,7 @@ public class DNA
     public DNA crossOver(DNA b)
     {
         DNA child = new DNA();
+        decideInheritance();
         Matrix wHidIn = setChildLayer(getwHiddenInput(), b.getwHiddenInput());
         Matrix wOutHid = setChildLayer(getwOutputHidden(), b.getwOutputHidden());
         child.setNewLayers(wHidIn, wOutHid);
@@ -87,4 +95,20 @@ public class DNA
         System.out.println("OutPutLayer");
         wOutputHidden.displayMatrix();
     }
+    private void decideInheritance()
+    {
+        Random rand = new Random();
+        for (int i = 0; i < inheritFromParentA.length; i++)
+        { inheritFromParentA[i] = (rand.nextInt(100) < 90 ? true : false);
+        }
+    }
+    public Matrix getInputLayer()
+    {
+        return wHiddenInput;
+    }
+    public Matrix getHiddenLayer()
+    {
+        return wOutputHidden;
+    }
+
 }

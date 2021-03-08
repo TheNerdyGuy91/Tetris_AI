@@ -64,4 +64,16 @@ public class Perceptron
     {
         nGenomes.display();
     }
+    public void setLayer(Matrix inputLayers, Matrix HiddenLayer)
+    {
+        nGenomes.setNewLayers(inputLayers, HiddenLayer);
+    }
+    public Matrix getInputLayer()
+    {
+       return nGenomes.getInputLayer();
+    }
+    public Matrix getHiddenLayer()
+    {
+        return nGenomes.getHiddenLayer();
+    }
 }

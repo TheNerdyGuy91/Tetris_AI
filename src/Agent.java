@@ -1,27 +1,24 @@
 import Tetriminos.*;
-
-import java.math.BigInteger;
-import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
-public class Agent
+public class Agent implements Cloneable
 {
     Perceptron brain;
-    int fitness, completedLines;
+    int fitness;
     TetrisGrid boardCopy;
     double bestHeurScore, currHeurScore;
     Movement movement; // xmovement, rotation
     TetrisGame gameplay;
+    int milliseconds;
+    boolean stillPlaying;
     public Agent()
     {
-        gameplay = new TetrisGame();
-        brain = new Perceptron(5, 5, 1);
-        brain.randomize();
+        brain = new Perceptron(7, 7, 1);
         fitness = 0;
         boardCopy = new TetrisGrid();
         movement = new Movement();
         bestHeurScore = Double.NEGATIVE_INFINITY;
-        completedLines = 0;
+        milliseconds = 0;
+        stillPlaying = true;
     }
     public Agent crossover(Agent parentB)
     {
@@ -50,14 +47,14 @@ public class Agent
     {
         brain.mutate();
     }
-    public BigInteger getFitness()
+    public long getFitness()
     {
-        return gameplay.getTotalScore();
+        return gameplay.calculateFitness();
     }
     public boolean spawnBlock() throws CloneNotSupportedException {
         return gameplay.spawnNextBlock();
     }
-    public void getBestMove() throws CloneNotSupportedException {
+    public void getBestMove() throws CloneNotSupportedException, InterruptedException {
         int i = 1;
         int posX = 0;
         int posY = 0;
@@ -70,78 +67,103 @@ public class Agent
                 tBlock.rotatePiece();
             }
     }
-    private void calculateMove(int rotation, int[][] currBlock, boolean toRight)
-    {
+    private void calculateMove(int rotation, int[][] currBlock, boolean toRight) throws CloneNotSupportedException, InterruptedException {
         int direction = (toRight ? 1 : -1), posY = 0, x_i = boardCopy.getWidth() / 2;
         int x_f = x_i;
 
-        while (!boardCopy.checkCollision(x_f + direction, posY, currBlock, true))
+        while (!boardCopy.checkCollision(x_f, posY, currBlock, true))
         {
-            boardCopy = gameplay.getGrid();
-            x_f += direction;
+            boardCopy = (TetrisGrid) gameplay.getGrid().clone();
             while (!boardCopy.checkCollision(x_f, posY + 1, currBlock, false))
             {
                 posY++;
 
             }
             boardCopy.mergeTetriminoAt(x_f, posY, currBlock);
-            currHeurScore = brain.feedForward(boardCopy.getHeuristic());
+            TetrisGrid heursmap = (TetrisGrid) boardCopy.clone();
+            currHeurScore = brain.feedForward(heursmap.getHeuristic());
             if (currHeurScore > bestHeurScore)
             {
                 bestHeurScore = currHeurScore;
                 movement.setMovements(x_f - x_i, rotation);
             }
             boardCopy.removeTetriminoAt(x_f, posY, currBlock);
+            x_f += direction;
             posY = 0;
         }
 
     }
-    public void makeMove() throws InterruptedException
-    {
+    public void makeMove() throws InterruptedException, CloneNotSupportedException {
         int xDir = (movement.getxMovement() > 0 ? 1 : -1);
         int x = 0, y = 0, posX = TetrisGrid.getWidth() / 2, rotation = 0, posY = 0;
         while(rotation < movement.getRotation())
         {
-            shiftTetrimino(posX, posY, 0);
+            shiftTetrimino(posX, posY, milliseconds);
             gameplay.rotatecurrentBlock();
             rotation++;
         }
         while (x != movement.getxMovement())
         {
-            shiftTetrimino(posX, posY, 0);
+            shiftTetrimino(posX, posY, milliseconds);
             x += xDir;
             posX += xDir;
         }
         while (!gameplay.checkCollision(posX, posY + 1, false))
         {
             posY = y;
-            shiftTetrimino(posX, posY, 0);
+            shiftTetrimino(posX, posY, milliseconds);
             y++;
         }
-        gameplay.MergedAt(posX, posY);
-       gameplay.displayboard();
+    stillPlaying = gameplay.MergedAt(posX, posY);
+        gameplay.updateBoard();
+        TimeUnit.MILLISECONDS.sleep(milliseconds);
        gameplay.scoreIt();
-        System.out.println();
-         TimeUnit.SECONDS.sleep(0);
         bestHeurScore = Double.NEGATIVE_INFINITY; // reseting for next block
 
     }
-    public void shiftTetrimino(int posX, int posY, int milliseconds) throws InterruptedException {
-        gameplay.MergedAt(posX, posY);
-        gameplay.displayboard();
-        System.out.println();
-        TimeUnit.MILLISECONDS.sleep(milliseconds);
-        gameplay.removeBlockAt(posX, posY);
+    private void shiftTetrimino(int posX, int posY, int millisecond) throws InterruptedException {
+
+            gameplay.MergedAt(posX, posY);
+            gameplay.updateBoard();
+            TimeUnit.MILLISECONDS.sleep(millisecond);
+            gameplay.removeBlockAt(posX, posY);
     }
     public void play() throws InterruptedException, CloneNotSupportedException {
-        while (spawnBlock())
+        gameplay = new TetrisGame();
+
+        while (spawnBlock() && stillPlaying)
         {
             getBestMove();
             makeMove();
         }
+        TimeUnit.MILLISECONDS.sleep(milliseconds * 10);
+        gameplay.exitGame();
     }
-
-    public int getCompletedLines() {
-        return completedLines;
+    public long getTotalScore()
+    {
+        return gameplay.getTotalScore();
+    }
+    public void setMilliseconds(int milliseconds) {
+        this.milliseconds = milliseconds;
+    }
+    public void setLayer(Matrix inputLayer, Matrix hiddenLayer)
+    {
+        brain.setLayer(inputLayer, hiddenLayer);
+    }
+    public Matrix getInputLayer()
+    {
+        return brain.getInputLayer();
+    }
+    public Matrix getHiddenLayer()
+    {
+        return brain.getHiddenLayer();
+    }
+    public long getTotalCompletedLines()
+    {
+        return gameplay.getTotalLinesCompletes();
+    }
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

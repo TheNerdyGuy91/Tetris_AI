@@ -1,0 +1,10 @@
+# Compiler output
+out/
+*.class
+
+# IntelliJ per-user state
+.idea/workspace.xml
+.idea/shelf/
+
+# macOS
+.DS_Store

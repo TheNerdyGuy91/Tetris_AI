@@ -4,13 +4,18 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import tetris.game.BoardView;
 import tetris.game.TetrisGame;
 
 /**
- * A group of agents that improves by a genetic algorithm. Each generation every agent plays one game, and the next
- * generation is bred from the two fittest agents seen so far.
+ * A group of agents that improves by a genetic algorithm. Each generation every agent plays one game, all at the
+ * same time, and the next generation is bred from the two fittest agents seen so far.
  */
 public final class Population {
     private final Random random;
@@ -28,12 +33,42 @@ public final class Population {
         }
     }
 
-    /** Has every agent play one game, showing the games on the view. */
-    public void compete(BoardView view) {
+    /**
+     * Has every agent play one game, all at the same time.
+     *
+     * @param views where to show the games: one view for each agent, in order
+     */
+    public void compete(List<BoardView> views) {
+        List<Callable<Void>> games = new ArrayList<>();
         for (int i = 0; i < agents.size(); i++) {
             Agent agent = agents.get(i);
-            agent.play(new TetrisGame(random), view);
-            System.out.println("Fitness: " + i + " " + agent.getFitness());
+            BoardView view = views.get(i);
+            // Each game gets its own random generator, seeded here in order, so the pieces an agent is dealt do
+            // not depend on how the threads happen to be scheduled.
+            TetrisGame game = new TetrisGame(new Random(random.nextLong()));
+            games.add(() -> {
+                agent.play(game, view);
+                return null;
+            });
+        }
+
+        // One thread per agent, so that all the games advance together instead of queueing for a free thread.
+        ExecutorService threads = Executors.newFixedThreadPool(agents.size());
+        try {
+            for (Future<Void> finishedGame : threads.invokeAll(games)) {
+                finishedGame.get();
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while the agents were playing", e);
+        } catch (ExecutionException e) {
+            throw new IllegalStateException("An agent's game failed", e.getCause());
+        } finally {
+            threads.shutdown();
+        }
+
+        for (int i = 0; i < agents.size(); i++) {
+            System.out.println("Fitness: " + i + " " + agents.get(i).getFitness());
         }
     }
 

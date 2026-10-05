@@ -21,8 +21,9 @@ and describes the resulting board with seven numbers:
 Those numbers go into a network with 7 inputs, 7 hidden nodes and 1 output. The move whose board gets the highest
 output is the one the agent plays.
 
-**Training.** A population of 100 agents starts with random weights. Every generation each agent plays one game and
-earns a fitness: one point per piece, plus a bonus for clearing lines that grows with the number cleared at once.
+**Training.** A population of 100 agents starts with random weights. Every generation all of them play one game
+each at the same time, on separate threads, and each earns a fitness: one point per piece, plus a bonus for
+clearing lines that grows with the number cleared at once.
 The next generation is bred from the two fittest agents seen so far. Each child takes most of its nodes from the
 fitter parent and a few from the other, and then some of its nodes are mutated.
 
@@ -33,7 +34,8 @@ The project needs Java 8 or newer and has no other dependencies.
 **In IntelliJ:** open the project folder and run one of the two classes in `src/tetris`:
 
 - `BestAgent` plays one game with the saved agent, slowly enough to watch.
-- `AgentTraining` trains a new population for 100 generations, then saves the best agent over the old one.
+- `AgentTraining` trains a new population for 100 generations, showing every agent's board side by side. The
+  best agent so far is saved over the old one after every generation, so training can be stopped at any time.
 
 **From a terminal**, in the project folder:
 
@@ -45,8 +47,9 @@ java -cp out tetris.BestAgent        # or tetris.AgentTraining
 Both programs read and write `data/bestAgent.txt` relative to the folder they are run from, so run them from the
 project folder. Closing the game window ends the program.
 
-The population size and the number of generations are constants at the top of `AgentTraining`. The playback speed
-is a constant at the top of `BestAgent`.
+The population size and the number of generations are constants at the top of `AgentTraining`, along with
+`FRAME_DELAY_MS`, which slows the games down if you want to watch them rather than train quickly. The playback
+speed of the saved agent is a constant at the top of `BestAgent`.
 
 ## Project layout
 
@@ -56,7 +59,7 @@ src/tetris/
     BestAgent.java       plays a game with the saved agent
     game/                the rules: board, pieces, scoring. No AI and no graphics.
     ai/                  the agent, its network, and the genetic algorithm
-    ui/                  the window that shows a game
+    ui/                  the window that shows one game, or a whole generation at once
 data/
     bestAgent.txt        weights of the trained agent
 ```

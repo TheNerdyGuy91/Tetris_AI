@@ -23,6 +23,13 @@ public final class TetrisGrid {
         return cells[row][col] == EMPTY;
     }
 
+    /** Makes this board an exact copy of another one. */
+    public void copyFrom(TetrisGrid other) {
+        for (int row = 0; row < HEIGHT; row++) {
+            System.arraycopy(other.cells[row], 0, cells[row], 0, WIDTH);
+        }
+    }
+
     /** Whether the piece at this position would stick out of the board or overlap a filled cell. */
     public boolean collides(Tetromino piece, int x, int y) {
         for (int row = 0; row < piece.getHeight(); row++) {

@@ -5,6 +5,9 @@ package tetris.game;
  * game can also be played with a view that does nothing.
  */
 public interface BoardView {
-    /** Displays the board as it is right now, returning once it has been on screen long enough to be seen. */
+    /**
+     * Displays the board as it is right now, returning once it has been on screen long enough to be seen. The
+     * board will keep changing afterwards, so a view that draws later must take a copy.
+     */
     void show(TetrisGrid grid);
 }

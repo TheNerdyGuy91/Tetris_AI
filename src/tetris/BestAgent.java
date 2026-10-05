@@ -20,9 +20,9 @@ public final class BestAgent {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         Agent agent = Agent.load(AgentTraining.WEIGHTS_FILE);
-        GameWindow window = new GameWindow(MOVE_DELAY_MS);
+        GameWindow window = GameWindow.forOneGame(MOVE_DELAY_MS);
 
-        agent.play(new TetrisGame(new Random()), window);
+        agent.play(new TetrisGame(new Random()), window.getBoards().get(0));
 
         // Leave the final board up for a moment before the window goes away.
         Thread.sleep(MOVE_DELAY_MS * 10);
